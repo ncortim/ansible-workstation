@@ -1,0 +1,20 @@
+- name: ripgrep 14.0.1 installation
+  hosts: localhost 
+  become: true
+  tasks:
+    - name: create ripgrep directory in /opt location
+      ansible.builtin.file:
+        path: /opt/ripgrep
+        state: directory
+        mode: '0755'
+
+    - name: curl ripgrep 14.0.1 deb image
+      ansible.builtin.uri:
+        url: https://github.com/BurntSushi/ripgrep/releases/download/14.1.0/ripgrep_14.1.0-1_amd64.deb
+        dest: /opt/ripgrep/ripgrep_14.1.0-1_amd64.deb
+
+    - name: install ripgrep 14.0.1
+      ansible.builtin.apt:
+        deb: /opt/ripgrep/ripgrep_14.1.0-1_amd64.deb
+        update_cache: true
+
