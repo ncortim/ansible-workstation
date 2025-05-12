@@ -1,0 +1,11 @@
+- name: install python3.13
+  hosts: localhost 
+  become: true
+  tasks:
+    - name: add python ppa repository
+      ansible.builtin.apt_repository:
+        repo: ppa:deadsnakes/ppa
+    - name: install python3.13 firefox
+      ansible.builtin.apt:
+        name: python3.13
+        update_cache: yes
