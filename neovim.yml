@@ -1,0 +1,28 @@
+- name: install latest neovim
+  hosts: localhost 
+  become: true
+  tasks:
+    - name: create neovim directory in /opt location
+      ansible.builtin.file:
+        path: /opt/neovim
+        state: directory
+        mode: '0755'
+
+    - name: curl neovim app image
+      ansible.builtin.uri:
+        url: https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.appimage
+        dest: /opt/neovim/nvim-linux-x86_64.appimage
+
+    - name: change neovim binary permissions to 755
+      ansible.builtin.file:
+        path: /opt/neovim/nvim-linux-x86_64.appimage
+        mode: '0755'
+
+    - name: create neovim symbolic link
+      ansible.builtin.file:
+        src: /opt/neovim/nvim-linux-x86_64.appimage
+        dest: /usr/bin/nvim
+        owner: root
+        group: root
+        state: link
+
