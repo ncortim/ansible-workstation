@@ -1,0 +1,8 @@
+- name: install gnu stow from apt repository
+  hosts: localhost 
+  become: true
+  tasks:
+    - name: install gnu stow
+      ansible.builtin.apt:
+       name: stow
+       update_cache: yes
