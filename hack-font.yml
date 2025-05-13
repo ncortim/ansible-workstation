@@ -1,0 +1,27 @@
+- name: font hack-3.4.0 installation
+  hosts: localhost 
+  tasks:
+    - name: create hack font directory in /opt location
+      become: true
+      ansible.builtin.file:
+        path: /opt/hack-font
+        state: directory
+        mode: '0755'
+        
+    - name: curl hach nerd font from github
+      become: true
+      ansible.builtin.uri:
+        url: https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/Hack.zip
+        dest: /opt/hack-font/Hack.zip
+
+    - name: create fonts directory in ~/.local/share location
+      ansible.builtin.file:
+        path: ~/.local/share/fonts
+        state: directory
+        mode: '0755'
+
+    - name: extract hack-3.4.0 zip file
+      ansible.builtin.unarchive:
+        src: /opt/hack-font/Hack.zip
+        dest: ~/.local/share/fonts
+
