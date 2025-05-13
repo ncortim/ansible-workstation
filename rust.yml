@@ -1,0 +1,43 @@
+- hosts: localhost
+  gather_facts: true
+  become: true
+  become_user: "{{ lookup('env', 'USER') }}"
+
+  pre_tasks:
+    - name: update repositories
+      ansible.builtin.apt: update_cache=yes
+      become_user: root
+      changed_when: False
+
+  vars:
+    user: "{{ ansible_user_id }}"
+
+  tasks:
+  - name: check if cargo is installed
+    ansible.builtin.shell: command -v cargo
+    register: cargo_exists
+    ignore_errors: yes
+
+  - name: create rust directory in /opt location
+    become_user: root
+    ansible.builtin.file:
+      path: /opt/rust
+      state: directory
+      mode: '0755'
+
+  - name: Download Installer
+    when: cargo_exists is failed
+    become_user: root
+    ansible.builtin.get_url:
+      url: https://sh.rustup.rs
+      dest: /opt/rust/sh.rustup.rs
+      mode: '0755'
+      force: 'yes'
+    tags:
+      - rust
+
+  - name: install rust/cargo
+    when: cargo_exists is failed
+    ansible.builtin.shell: /opt/rust/sh.rustup.rs -y
+    tags:
+      - rust
