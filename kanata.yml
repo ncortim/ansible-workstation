@@ -1,0 +1,64 @@
+- hosts: localhost
+  gather_facts: true
+  # become: true
+  # become_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+  - name: check if cargo is installed
+    ansible.builtin.shell: cargo --version
+    register: cargo_exists
+    ignore_errors: yes
+
+  - debug:
+      msg: "{{ cargo_exists }}"
+      
+  - name: register user home directory
+    ansible.builtin.shell: echo ${HOME}
+    register: user_home_dir
+    # ignore_errors: yes
+
+  - debug:
+      msg: "{{ user_home_dir.stdout }}"
+
+  - name: install kanata keyboard remapper
+    when: cargo_exists is not failed
+    community.general.cargo:
+      name: kanata
+
+  - name: create kanata symbolic link
+    become: true
+    ansible.builtin.file:
+      src: "{{ user_home_dir.stdout }}/.cargo/bin/kanata"
+      dest: /usr/bin/kanata
+      owner: root
+      group: root
+      state: link
+
+  - name: curl kanata service unit and store it in /etc/systemd/system/
+    become: true
+    ansible.builtin.get_url:
+      url: https://raw.githubusercontent.com/ncortim/dotfiles/refs/heads/main/kanata/.config/kanata/kanata.service
+      dest: /etc/systemd/system/kanata.service
+      mode: '755'
+
+
+  - name: Explicitly specifying named matched groups
+    become: true
+    ansible.builtin.replace:
+      path: /etc/systemd/system/kanata.service
+      regexp: '\${HOME}'
+      replace: "{{ user_home_dir.stdout }}"
+
+
+  - name: reload systemd daemon to recognize kanata service
+    become: true
+    ansible.builtin.systemd_service:
+      daemon_reload: true
+
+
+  - name: enable and start kanata service
+    become: true
+    ansible.builtin.systemd_service:
+      enabled: true
+      name: kanata.service
+      state: started
