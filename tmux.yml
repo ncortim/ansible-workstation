@@ -1,0 +1,47 @@
+- name: install latest tmux
+  hosts: localhost 
+  become: true
+  tasks:
+    - name: install dependencies libevent ncurses
+      ansible.builtin.apt:
+        name: 
+          - libevent-dev
+          - ncurses-dev
+          - build-essential
+          - bison
+          - pkg-config
+        state: latest
+        update_cache: true
+    
+    - name: create tmux directory in /opt location
+      ansible.builtin.file:
+        path: /opt/tmux
+        state: directory
+        mode: '0755'
+
+    - name: clone tmux github repository
+      ansible.builtin.git:
+        repo: https://github.com/tmux/tmux.git
+        dest: /opt/tmux
+        # single_branch: yes
+        # version: master 
+  
+    - name: create tmux configure script
+      ansible.builtin.shell: 
+        cmd: sh autogen.sh
+        chdir: /opt/tmux
+
+    - name: configure tmux software
+      ansible.builtin.shell: 
+        cmd: './configure'
+        chdir: /opt/tmux
+
+    - name: Build with make
+      community.general.make:
+        chdir: /opt/tmux
+        # target: all
+
+    - name: Install with make install
+      community.general.make:
+        chdir: /opt/tmux
+        target: install
