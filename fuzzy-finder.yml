@@ -1,0 +1,51 @@
+- name: install latest fuzzy finder
+  hosts: localhost 
+  # become: true
+  tasks:
+    - name: register user home directory
+      ansible.builtin.shell: echo ${HOME}
+      register: user_home_dir
+      # ignore_errors: yes
+
+    - debug:
+        msg: "{{ user_home_dir.stdout }}"
+
+    - name: create fzf directory in /opt location
+      become: true
+      ansible.builtin.file:
+        path: /opt/fzf
+        state: directory
+        mode: '0755'
+
+    - name: curl fzf binary files
+      become: true
+      ansible.builtin.uri:
+        url: https://github.com/junegunn/fzf/releases/download/v0.62.0/fzf-0.62.0-linux_amd64.tar.gz
+        dest: /opt/fzf/fzf-0.62.0-linux_amd64.tar.gz
+
+    - name: extract fzf tar.gz file
+      become: true
+      ansible.builtin.unarchive:
+        owner: root
+        group: root
+        mode: '0757'
+        src: /opt/fzf/fzf-0.62.0-linux_amd64.tar.gz
+        dest: /opt/fzf
+
+    - name: create fzf symbolic link
+      become: true
+      ansible.builtin.file:
+        src: /opt/fzf/fzf
+        dest: /usr/bin/fzf
+        owner: root
+        group: root
+        state: link
+
+    - name: add fzf to bash.rc
+      ansible.builtin.blockinfile:
+        path: "{{ user_home_dir.stdout }}/.bashrc"
+        append_newline: true
+        prepend_newline: true
+        block: |
+          # Set up fzf key bindings and fuzzy completion
+          eval "$(fzf --bash)"
