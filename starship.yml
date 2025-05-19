@@ -1,0 +1,54 @@
+- hosts: localhost
+  gather_facts: true
+  # become: true
+  # become_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+  - name: check if cargo is installed
+    ansible.builtin.shell: cargo --version
+    register: cargo_exists
+    # ignore_errors: yes
+
+  - debug:
+      msg: "{{ cargo_exists }}"
+      
+  - name: register user home directory
+    ansible.builtin.shell: echo ${HOME}
+    register: user_home_dir
+    # ignore_errors: yes
+
+  - debug:
+      msg: "{{ user_home_dir.stdout }}"
+
+  - name: install starship cross-shell prompt
+    when: cargo_exists is not failed
+    community.general.cargo:
+      name: starship
+      locked: true
+
+  - name: create starship symbolic link
+    become: true
+    ansible.builtin.file:
+      src: "{{ user_home_dir.stdout }}/.cargo/bin/starship"
+      dest: /usr/bin/starship
+      # owner: root
+      # group: root
+      state: link
+
+  - name: create starship gruvbox-rainbow preset configuration 
+    ansible.builtin.shell: 
+      cmd: "starship preset gruvbox-rainbow -o {{ user_home_dir.stdout }}/.config/starship.toml"
+
+  - name: add starship to bash.rc
+    ansible.builtin.blockinfile:
+      path: "{{ user_home_dir.stdout }}/.bashrc"
+      append_newline: true
+      prepend_newline: true
+      backup: true
+      marker: "# STARSHIP {mark} ANSIBLE MANAGED BLOCK"
+      block: |
+        # Set up starship
+        eval "$(starship init bash)"
+
+
+
