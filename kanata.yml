@@ -30,8 +30,8 @@
     ansible.builtin.file:
       src: "{{ user_home_dir.stdout }}/.cargo/bin/kanata"
       dest: /usr/bin/kanata
-      owner: root
-      group: root
+      # owner: root
+      # group: root
       state: link
 
   - name: curl kanata service unit and store it in /etc/systemd/system/

@@ -46,6 +46,8 @@
         path: "{{ user_home_dir.stdout }}/.bashrc"
         append_newline: true
         prepend_newline: true
+        backup: true
+        marker: "# FZF {mark} ANSIBLE MANAGED BLOCK"
         block: |
           # Set up fzf key bindings and fuzzy completion
           eval "$(fzf --bash)"
