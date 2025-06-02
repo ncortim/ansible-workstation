@@ -1,0 +1,54 @@
+- hosts: localhost
+  gather_facts: true
+  # become: true
+  # become_user: "{{ lookup('env', 'USER') }}"
+
+  pre_tasks:
+    - name: update repositories
+      become: true
+      ansible.builtin.apt: update_cache=yes
+      become_user: root
+      changed_when: False
+
+  vars:
+    user: "{{ ansible_user_id }}"
+
+  tasks:
+  - name: check if golang is installed
+    ansible.builtin.shell: go version
+    register: golang_exists
+    ignore_errors: yes
+
+  - name: create golang directory in /opt location
+    become_user: root
+    become: true
+    ansible.builtin.file:
+      path: /opt/golang
+      state: directory
+      mode: '0755'
+
+  - name: curl golang binary files
+    when: golang_exists is failed
+    become: true
+    ansible.builtin.uri:
+      url: https://go.dev/dl/go1.24.3.linux-amd64.tar.gz
+      dest: /opt/golang/go1.24.3.linux-amd64.tar.gz
+
+  - name: extract golang tar.gz file
+    when: golang_exists is failed
+    become: true
+    ansible.builtin.unarchive:
+      # owner: root
+      # group: root
+      # mode: '0757'
+      src: /opt/golang/go1.24.3.linux-amd64.tar.gz
+      dest: /opt/golang
+
+  - name: create fzf symbolic link
+    become: true
+    ansible.builtin.file:
+      src: /opt/golang/go/bin/go
+      dest: /usr/bin/go
+      owner: root
+      group: root
+      state: link
