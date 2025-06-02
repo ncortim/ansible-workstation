@@ -1,25 +1,30 @@
 - name: install kubectl
   hosts: localhost 
-  become: true
   tasks:
-    - name: install ca-certificates
+    - name: install dependencies ca-certificates, curl, apt-transport-https
+      become: true
       ansible.builtin.apt:
-        name: ca-certificates
+        name: 
+          - ca-certificates
+          - curl
+          - gnupg
+          - apt-transport-https
+        state: latest
+        update_cache: true
 
-    - name: install curl
-      ansible.builtin.apt:
-        name: curl
-          
     - name: Download the public signing key for the Kubernetes package repositories.
+      become: true
       ansible.builtin.get_url:
-        # url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
-        url: "https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key"
-        dest: /etc/apt/keyrings/kubectl.asc
+        url: "https://pkgs.k8s.io/core:/stable:/v1.33/deb/Release.key"
+        # dest: /etc/apt/keyrings/kubectl.asc
+        # dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
         # dest: /etc/apt/keyrings/kubectl.gpg
         mode: '0644'
-        force: true
+        # force: true
 
     - name: Set DPKG architecture
+      become: true
       ansible.builtin.set_fact:
         dpkg_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
     
@@ -27,16 +32,48 @@
         msg: "{{ dpkg_arch }}"
 
     - name: add kubernetes apt repository 
+      become: true
       ansible.builtin.apt_repository:
         # repo: "deb [arch={{ dpkg_arch }} signed-by=/etc/apt/keyrings/kubectl.asc] https://apt.kubernetes.io/ kubernetes-xenial main"
-        repo: "deb [arch={{ dpkg_arch }} signed-by=/etc/apt/keyrings/kubectl.asc] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
+        repo: "deb [arch={{ dpkg_arch }} signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.33/deb/ /"
         # repo: "deb [signed-by=/etc/apt/keyrings/kubectl.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /"
         state: present
-        filename: kubectl
+        filename: kubernetes
         update_cache: true
 
     - name: install kubectl
+      become: true
       ansible.builtin.apt:
         pkg:
           - kubectl
         update_cache: yes
+
+    - name: register user home directory
+      ansible.builtin.shell: echo ${HOME}
+      register: user_home_dir
+      # ignore_errors: yes
+  
+    - debug:
+        msg: "{{ user_home_dir.stdout }}"
+  
+    - name: add kubectl autocompletion to bash.rc
+      ansible.builtin.blockinfile:
+        path: "{{ user_home_dir.stdout }}/.bashrc"
+        append_newline: true
+        prepend_newline: true
+        backup: true
+        marker: "# KUBECTL {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          # Set up kubectl
+          source <(kubectl completion bash)
+
+    # - name: add kubectl alias to bash_aliases
+    #   ansible.builtin.blockinfile:
+    #     path: "{{ user_home_dir.stdout }}/.bash_aliases"
+    #     append_newline: true
+    #     prepend_newline: true
+    #     backup: true
+    #     marker: "# KUBECTL {mark} ANSIBLE MANAGED BLOCK"
+    #     block: |
+    #       # Set up kubectl
+    #       alias k="kubectl"
