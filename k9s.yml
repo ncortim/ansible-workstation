@@ -1,0 +1,38 @@
+- name: install latest k9s
+  hosts: localhost 
+  become: true
+  tasks:
+  - name: create k9s directory in /opt location
+    ansible.builtin.file:
+      path: /opt/k9s
+      state: directory
+      mode: '0755'
+
+  - name: clone k8s github repository
+    ansible.builtin.git:
+      repo: https://github.com/derailed/k9s.git
+      dest: /opt/k9s
+      single_branch: yes
+      version: master 
+  
+  - name: build the default k9s target
+    community.general.make:
+      chdir: /opt/k9s
+      target: build
+
+  - name: create k9s symbolic link
+    ansible.builtin.file:
+      src: /opt/k9s/execs/k9s
+      dest: /usr/bin/k9s
+      owner: root
+      group: root
+      state: link
+    # - name: Build with make
+    #   community.general.make:
+    #     chdir: /opt/tmux
+    #     # target: all
+    #
+    # - name: Install with make install
+    #   community.general.make:
+    #     chdir: /opt/tmux
+    #     target: install
