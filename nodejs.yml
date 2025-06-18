@@ -1,0 +1,34 @@
+- name: nodejs installation
+  hosts: localhost 
+  # become: true
+  tasks:
+    - name: create nodejs directory in /opt location
+      become: true
+      ansible.builtin.file:
+        path: /opt/nodejs
+        state: directory
+        mode: '0755'
+        
+    - name: download nvm installation script
+      become: true
+      ansible.builtin.uri:
+        url: https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh
+        dest: /opt/nodejs/install.sh
+
+    - name: execute installation script
+      become: true
+      ansible.builtin.shell: 
+        cmd: bash install.sh
+        chdir: /opt/nodejs
+
+    - name: Load nvm and install Node.js 22
+      ansible.builtin.shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install 22
+      args:
+        executable: /bin/bash
+      environment:
+        HOME: "{{ lookup('env', 'HOME') }}"
+
+
