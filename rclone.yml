@@ -1,0 +1,29 @@
+- name: install latest rclone
+  hosts: localhost 
+  become: true
+  tasks:
+  - name: create rclone directory in /opt location
+    ansible.builtin.file:
+      path: /opt/rclone
+      state: directory
+      mode: '0755'
+
+  - name: wget rclone utility and store it in /opt/rclone
+    ansible.builtin.get_url:
+      url: https://downloads.rclone.org/v1.70.3/rclone-v1.70.3-linux-amd64.zip
+      dest: /opt/rclone/rclone-v1.70.3-linux-amd64.zip
+      mode: '755'
+
+
+  - name: extract rclone-v1.70.3-linux-amd64 zip file
+    ansible.builtin.unarchive:
+      src: /opt/rclone/rclone-v1.70.3-linux-amd64.zip
+      dest: /opt/rclone/
+
+  - name: create rclone symbolic link
+    ansible.builtin.file:
+      src: /opt/rclone/rclone-v1.70.3-linux-amd64/rclone
+      dest: /usr/bin/rclone
+      owner: root
+      group: root
+      state: link
