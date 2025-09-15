@@ -1,0 +1,57 @@
+- name: install latest postman
+  hosts: localhost 
+  # become: true
+  tasks:
+  - name: register user home directory
+    ansible.builtin.shell: echo ${HOME}
+    register: user_home_dir
+    # ignore_errors: yes
+
+  - debug:
+      msg: "{{ user_home_dir.stdout }}"
+
+  - name: create postman directory in /opt location
+    become: true
+    ansible.builtin.file:
+      path: /opt/postman
+      state: directory
+      mode: '0755'
+
+  - name: wget postman utility and store it in /opt/postman
+    become: true
+    ansible.builtin.get_url:
+      url:  https://dl.pstmn.io/download/latest/linux_64
+      dest: /opt/postman/postman-linux-x64.tar.gz
+      mode: '755'
+
+
+  - name: extract postman-linux-x64.tar.gz file
+    become: true
+    ansible.builtin.unarchive:
+      src: /opt/postman/postman-linux-x64.tar.gz
+      dest: /opt/postman/
+      group: root
+      owner: root
+
+  - name: create postman symbolic link
+    become: true
+    ansible.builtin.file:
+      src: /opt/postman/Postman/app/Postman
+      dest: /usr/bin/postman
+      owner: root
+      group: root
+      state: link
+
+  - name: Create the Postman.desktop file
+    ansible.builtin.copy:
+      content: |
+        [Desktop Entry]
+        Encoding=UTF-8
+        Name=Postman
+        Exec=/opt/postman/Postman/app/Postman
+        Icon=/opt/postman/Postman/app/resources/app/assets/icon.png
+        Terminal=false
+        Type=Application
+        Categories=Development;
+      dest: "{{ user_home_dir.stdout }}/.local/share/applications/Postman.desktop"
+      mode: '0600'
