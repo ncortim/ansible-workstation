@@ -5,18 +5,22 @@
     - name: install ca-certificates
       ansible.builtin.apt:
         name: ca-certificates
+
     - name: install curl
       ansible.builtin.apt:
         name: curl
+
     - name: install gnupg
       ansible.builtin.apt:
         name: gnupg
+
     - name: get docker url 
       ansible.builtin.get_url:
         url: "https://download.docker.com/linux/ubuntu/gpg"
         dest: /etc/apt/keyrings/docker.asc
-        mode: '0644'
+        mode: '0444'
         force: true
+
     - name: Set DPKG architecture
       ansible.builtin.set_fact:
         dpkg_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
@@ -30,6 +34,7 @@
         state: present
         filename: docker
         update_cache: true
+
     - name: install docker packages
       ansible.builtin.apt:
         pkg:
