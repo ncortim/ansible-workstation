@@ -1,0 +1,47 @@
+- name: install minikube
+  hosts: localhost 
+  vars:
+    user: "{{ ansible_user_id }}"
+  tasks:
+    - debug:
+        msg: "{{ ansible_user_id }}"
+       
+    - name: create minikube directory in /opt location
+      become: true
+      ansible.builtin.file:
+        path: /opt/minikube 
+        state: directory
+        mode: '0755'
+  
+    - name: get minikube stable release on x86-64 Linux using binary
+      become: true
+      ansible.builtin.get_url:
+        url: "https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64"
+        dest: /opt/minikube/minikube-linux-amd64
+        mode: '0755'
+
+
+    - name: Set DPKG architecture
+      # become: true
+      ansible.builtin.set_fact:
+        dpkg_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
+
+    - debug:
+        msg: "{{ dpkg_arch }}"
+
+    # - name: install minikube
+    #   become: true
+    #   ansible.builtin.shell: /opt/minikube/minikube-linux-amd64
+    - name: Install minikube binary if not already installed
+      become: true
+      ansible.builtin.command:
+        cmd: install /opt/minikube/minikube-linux-amd64 /usr/bin/minikube
+        creates: /usr/bin/minikube
+
+    # - name: create minikube symbolic link
+    #   ansible.builtin.file:
+    #     src: /opt/minikube/minikube/li
+    #     dest: /usr/bin/k9s
+    #     owner: root
+    #     group: root
+    #     state: link
