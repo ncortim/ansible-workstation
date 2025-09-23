@@ -1,0 +1,48 @@
+- name: install spring-boot-cli 3.5.6
+  hosts: localhost 
+  vars:
+    user: "{{ ansible_user_id }}"
+  tasks:
+    - debug:
+        msg: "{{ ansible_user_id }}"
+       
+    - name: create spring-boot-cli directory in /opt location
+      become: true
+      ansible.builtin.file:
+        path: /opt/spring-boot-cli
+        state: directory
+        mode: '0755'
+  
+    - name: get spring-boot-cli 3.5.6 binary
+      become: true
+      ansible.builtin.get_url:
+      # ansible.builtin.uri:
+        url: "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-cli/3.5.6/spring-boot-cli-3.5.6-bin.tar.gz"
+        dest: /opt/spring-boot-cli/spring-boot-cli-3.5.6-bin.tar.gz
+        mode: '0755'
+        
+    - name: extract spring-boot-cli-3.5.6-bin.tar.gz file
+      become: true
+      ansible.builtin.unarchive:
+        src: /opt/spring-boot-cli/spring-boot-cli-3.5.6-bin.tar.gz
+        dest: /opt/spring-boot-cli/
+        group: root
+        owner: root
+  
+    - name: create spring-boot-cli symbolic link
+      become: true
+      ansible.builtin.file:
+        src: /opt/spring-boot-cli/spring-3.5.6/bin/spring
+        dest: /usr/bin/spring
+        owner: root
+        group: root
+        state: link
+
+    - name: create spring-boot-cli shell completion symbolic link
+      become: true
+      ansible.builtin.file:
+        src: /opt/spring-boot-cli/spring-3.5.6/shell-completion/bash/spring
+        dest: /etc/bash_completion.d/spring
+        owner: root
+        group: root
+        state: link
