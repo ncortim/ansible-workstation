@@ -1,0 +1,52 @@
+- name: zoxide installation
+  hosts: localhost 
+  # become: true
+  vars:
+    user: "{{ ansible_user_id }}"
+  tasks:
+    - debug:
+        msg: "{{ ansible_user_id }}"
+      
+    - name: register user home directory
+      ansible.builtin.shell: echo ${HOME}
+      register: user_home_dir
+      # ignore_errors: yes
+
+    - debug:
+        msg: "{{ user_home_dir.stdout }}"
+
+    - name: create zoxide directory in /opt location
+      become: true
+      ansible.builtin.file:
+        path: /opt/zoxide
+        state: directory
+        mode: '0755'
+        
+    - name: download zoxide installation script
+      become: true
+      ansible.builtin.uri:
+        url: https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh
+        dest: /opt/zoxide/install.sh
+        owner: " {{ user }}"
+        # group: " {{ user }}"
+        mode: '0700'
+        creates: /opt/zoxide/install.sh
+    
+    - name: execute installation script
+      # become: true
+      ansible.builtin.shell: 
+        cmd: sh install.sh
+        chdir: /opt/zoxide
+        creates: "{{ user_home_dir.stdout }}/.local/bin/zoxide"
+
+    - name: add zoxide to bash.rc
+      ansible.builtin.blockinfile:
+        path: "{{ user_home_dir.stdout }}/.bashrc"
+        append_newline: true
+        prepend_newline: true
+        backup: true
+        marker: "# ZOXIDE {mark} ANSIBLE MANAGED BLOCK"
+        block: |
+          # Set up zoxide key bindings and completion
+          eval "$(zoxide init bash)"
+
