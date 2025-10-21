@@ -2,30 +2,48 @@
   hosts: localhost 
   become: true
   tasks:
-    - name: install wget
-      apt:
-        name: wget
-    - name: install gpg
-      apt:
-        name: gpg
-    - name: get vscode url 
-      get_url:
-        url: "https://packages.microsoft.com/keys/microsoft.asc"
-        dest: /etc/apt/keyrings/packages.microsoft.asc
+    - name: install wget, gpg
+      ansible.builtin.apt:
+        name:
+          - wget
+          - gpg
+        state: present
+        update_cache: true
+
+    - name: get vscode url gpg key
+      ansible.builtin.shell: | 
+        wget -qO- https://packages.microsoft.com/keys/microsoft.asc \
+        | gpg --dearmor > /etc/apt/keyrings/vscode.gpg
+      args:
+        creates: /etc/apt/keyrings/vscode.gpg
+
+    - name: Change permissions to gpg key file
+      ansible.builtin.file:
+        path: /etc/apt/keyrings/vscode.gpg
+        owner: root
+        group: root
         mode: '0644'
-        force: true
+
+    - name: Set DPKG architecture
+      ansible.builtin.set_fact:
+        dpkg_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}"
+
+    - debug:
+        msg: "{{ dpkg_arch }}"
 
     - name: add vscode repository 
-      apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/packages.microsoft.asc] https://packages.microsoft.com/repos/code stable main"
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ dpkg_arch }} signed-by=/etc/apt/keyrings/vscode.gpg] https://packages.microsoft.com/repos/code stable main"
         state: present
         filename: vscode
         update_cache: true
+
     - name: install apt-transport-https
-      apt:
+      ansible.builtin.apt:
         name: apt-transport-https
-        update_cache: yes
+        update_cache: true
+
     - name: install vscode
-      apt:
+      ansible.builtin.apt:
         name: code
-        update_cache: yes
+        update_cache: true
